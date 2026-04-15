@@ -1,0 +1,267 @@
+html<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PSP Portfolio Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#F7F6F2;color:#1A1A18;min-height:100vh}
+:root{--gold:#B47C2E;--dark:#1A1A18;--surface:#FFFFFF;--border:#E5E3DC;--muted:#888780}
+#setup{max-width:500px;margin:80px auto;background:#fff;border-radius:12px;border:1px solid var(--border);padding:2.5rem}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.logo-mark{width:36px;height:36px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;color:#fff}
+.logo-text{font-family:'DM Serif Display',serif;font-size:18px}
+h1{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:.5rem}
+.sub{font-size:14px;color:var(--muted);margin-bottom:2rem;line-height:1.6}
+label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;margin-bottom:1rem;background:#fff;color:#1A1A18}
+input:focus{outline:none;border-color:var(--gold)}
+.btn{width:100%;padding:12px;background:var(--gold);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer}
+.btn:hover{opacity:.9}
+.err{font-size:13px;color:#A32D2D;margin-top:.75rem;display:none}
+#loading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center}
+.loading-box{background:#fff;border-radius:12px;padding:2rem 3rem;text-align:center}
+.spinner{width:32px;height:32px;border:2px solid #eee;border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+#dashboard{display:none}
+.dash-header{background:#fff;border-bottom:1px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
+.dash-logo{display:flex;align-items:center;gap:8px}
+.dash-mark{width:28px;height:28px;background:var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:12px;color:#fff}
+.dash-name{font-family:'DM Serif Display',serif;font-size:15px}
+.dash-meta{font-size:11px;color:var(--muted)}
+.reset-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.filter-bar{background:#fff;border-bottom:1px solid var(--border);padding:.6rem 1.5rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filter-bar select{font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:#1A1A18;cursor:pointer;font-family:'DM Sans',sans-serif}
+.filter-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:1.25rem 1.5rem}
+.mc{background:#fff;border-radius:8px;border:1px solid var(--border);padding:1rem;text-align:center}
+.mc-val{font-family:'DM Serif Display',serif;font-size:30px;color:#1A1A18}
+.mc-lbl{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.mc-sub{font-size:11px;color:var(--gold);font-weight:500;margin-top:2px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;padding:0 1.5rem 1rem}
+.cc{background:#fff;border-radius:10px;border:1px solid var(--border);padding:1.25rem}
+.ct{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.sec{padding:.5rem 1.5rem;font-family:'DM Serif Display',serif;font-size:14px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:1rem}
+.tw{padding:0 1.5rem 2rem;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden}
+th{text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--border);background:#FAFAF8}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:#1A1A18;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.p-active{background:#EAF3DE;color:#3B6D11}
+.p-acq{background:#E1F5EE;color:#0F6E56}
+.p-dis{background:#FCEBEB;color:#A32D2D}
+.p-oth{background:#F1EFE8;color:#5F5E5A}
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div class="logo-row"><div class="logo-mark">P</div><div class="logo-text">Peterson Search Partners</div></div>
+  <h1>Portfolio Dashboard</h1>
+  <p class="sub">Connect your Affinity account to load live searcher data. Your API key is never stored.</p>
+  <label>Affinity API Key</label>
+  <input type="password" id="api-key" placeholder="Paste your API key..." />
+  <label>List ID</label>
+  <input type="text" id="list-id" value="188584" />
+  <button class="btn" onclick="connect()">Connect & Load Dashboard</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div id="loading">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div id="load-txt" style="font-size:14px;color:#888">Connecting to Affinity...</div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="dash-header">
+    <div class="dash-logo"><div class="dash-mark">P</div><div class="dash-name">Peterson Search Partners — Searcher Portfolio</div></div>
+    <div style="display:flex;gap:8px;align-items:center"><div class="dash-meta" id="updated"></div><button class="reset-btn" onclick="reset()">Change account</button></div>
+  </div>
+  <div class="filter-bar">
+    <span class="filter-lbl">Filter:</span>
+    <select id="f-fund" onchange="filter()"><option value="">All PSP Funds</option></select>
+    <select id="f-status" onchange="filter()"><option value="">All Statuses</option></select>
+    <select id="f-gender" onchange="filter()"><option value="">All Genders</option></select>
+    <select id="f-school" onchange="filter()"><option value="">All Business Schools</option></select>
+    <select id="f-year" onchange="filter()"><option value="">All Backing Years</option></select>
+  </div>
+  <div class="metrics" id="metrics"></div>
+  <div class="charts">
+    <div class="cc"><div class="ct">Searchers backed by year</div><div style="position:relative;height:220px"><canvas id="c-vintage" role="img" aria-label="Searchers by year"></canvas></div></div>
+    <div class="cc"><div class="ct">Acquisition rate by year</div><div style="position:relative;height:220px"><canvas id="c-acq" role="img" aria-label="Acquisition rate"></canvas></div></div>
+    <div class="cc"><div class="ct">Gender breakdown</div><div style="position:relative;height:220px"><canvas id="c-gender" role="img" aria-label="Gender breakdown"></canvas></div></div>
+    <div class="cc"><div class="ct">PSP fund breakdown</div><div style="position:relative;height:220px"><canvas id="c-fund" role="img" aria-label="Fund breakdown"></canvas></div></div>
+    <div class="cc"><div class="ct">Search location</div><div style="position:relative;height:220px" id="geo-wrap"><canvas id="c-geo" role="img" aria-label="Search location"></canvas></div></div>
+    <div class="cc"><div class="ct">Top industries of interest</div><div style="position:relative;height:220px" id="ind-wrap"><canvas id="c-industry" role="img" aria-label="Industries"></canvas></div></div>
+  </div>
+  <div class="sec">Searcher roster</div>
+  <div class="tw"><table><thead><tr><th>Name</th><th>Fund</th><th>Status</th><th>Backed</th><th>Acquired</th><th>Would Back Again</th></tr></thead><tbody id="roster"></tbody></table></div>
+</div>
+
+<script>
+let allData=[],charts={},apiKey='',listId='';
+const PROXY='/api/proxy';
+const COLORS=['#B47C2E','#1A8A6B','#3266AD','#7E57B5','#C05830','#5B8C2A','#B04070','#487AB0'];
+
+function showLoad(msg){document.getElementById('loading').style.display='flex';document.getElementById('load-txt').textContent=msg||'Loading...';}
+function hideLoad(){document.getElementById('loading').style.display='none';}
+
+async function connect(){
+  apiKey=document.getElementById('api-key').value.trim();
+  listId=document.getElementById('list-id').value.trim();
+  const err=document.getElementById('err');
+  err.style.display='none';
+  if(!apiKey){err.textContent='Please enter your API key.';err.style.display='block';return;}
+  showLoad('Fetching field definitions...');
+  try{
+    const fields=await getFields();
+    showLoad('Loading searcher data...');
+    allData=await getEntries(fields);
+    showLoad('Rendering...');
+    setTimeout(()=>{build();hideLoad();document.getElementById('setup').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();},100);
+  }catch(e){hideLoad();err.textContent='Error: '+e.message;err.style.display='block';}
+}
+
+async function affinityFetch(path){
+  const res=await fetch(PROXY+path,{headers:{'x-affinity-key':apiKey,'Content-Type':'application/json'}});
+  if(!res.ok)throw new Error('API error '+res.status);
+  return res.json();
+}
+
+async function getFields(){
+  const d=await affinityFetch('/v2/lists/'+listId+'/fields');
+  return d.data||[];
+}
+
+async function getEntries(fields){
+  const ids=fields.map(f=>f.id).join(',');
+  let all=[],cursor=null,page=0;
+  do{
+    page++;showLoad('Loading searcher data... (page '+page+')');
+    let path='/v2/lists/'+listId+'/list-entries?limit=100&fieldIds='+encodeURIComponent(ids);
+    if(cursor)path+='&cursor='+encodeURIComponent(cursor);
+    const d=await affinityFetch(path);
+    (d.data||[]).forEach(e=>{
+      const row={_id:e.id,name:e.entity?.name||(e.entity?.first_name?(e.entity.first_name+' '+(e.entity.last_name||'')).trim():'')};
+      (e.fields||[]).forEach(fv=>{
+        const fd=fields.find(f=>f.id===fv.id);if(!fd)return;
+        const v=fv.value;if(!v){row[fd.name]=null;return;}
+        if(v.type==='person')row[fd.name]=v.data?.name||'';
+        else if(['date','text','string','number'].includes(v.type))row[fd.name]=v.data;
+        else if(v.type==='dropdown')row[fd.name]=v.data?.text||v.data;
+        else if(v.type==='boolean')row[fd.name]=v.data;
+        else if(Array.isArray(v))row[fd.name]=v.map(x=>x?.data?.text||x?.data||x).join(', ');
+        else row[fd.name]=v.data??v;
+      });
+      all.push(row);
+    });
+    cursor=d.pagination?.nextCursor||null;
+  }while(cursor&&page<50);
+  return all;
+}
+
+function gv(r,...keys){for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&r[k]!=='')return r[k];}return null;}
+function yr(v){if(!v)return null;const d=new Date(v);return isNaN(d.getFullYear())?null:d.getFullYear();}
+function fd(v){if(!v)return '—';const d=new Date(v);return isNaN(d)?v:d.toLocaleDateString('en-US',{month:'short',year:'numeric'});}
+
+function build(){populateFilters();filter();}
+
+function populateFilters(){
+  const funds=[...new Set(allData.map(r=>gv(r,'PSP Fund')).filter(Boolean))].sort();
+  const statuses=[...new Set(allData.map(r=>gv(r,'Searcher Status')).filter(Boolean))].sort();
+  const genders=[...new Set(allData.flatMap(r=>[gv(r,'Gender 1'),gv(r,'Gender 2')]).filter(Boolean))].sort();
+  const schools=[...new Set(allData.flatMap(r=>[gv(r,'Business School'),gv(r,'Business School #2')]).filter(Boolean))].sort();
+  const years=[...new Set(allData.map(r=>yr(gv(r,'Backing Commitment Date','Invested Date'))).filter(Boolean))].sort();
+  pop('f-fund',funds);pop('f-status',statuses);pop('f-gender',genders);pop('f-school',schools);pop('f-year',years);
+}
+
+function pop(id,vals){
+  const el=document.getElementById(id),first=el.options[0];
+  el.innerHTML='';el.appendChild(first);
+  vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});
+}
+
+function filter(){
+  const ff=document.getElementById('f-fund').value,fs=document.getElementById('f-status').value,fg=document.getElementById('f-gender').value,fsc=document.getElementById('f-school').value,fy=document.getElementById('f-year').value;
+  const data=allData.filter(r=>{
+    if(ff&&gv(r,'PSP Fund')!==ff)return false;
+    if(fs&&gv(r,'Searcher Status')!==fs)return false;
+    if(fg&&gv(r,'Gender 1')!==fg&&gv(r,'Gender 2')!==fg)return false;
+    if(fsc&&gv(r,'Business School')!==fsc&&gv(r,'Business School #2')!==fsc)return false;
+    if(fy&&String(yr(gv(r,'Backing Commitment Date','Invested Date')))!==fy)return false;
+    return true;
+  });
+  renderMetrics(data);renderCharts(data);renderRoster(data);
+}
+
+function renderMetrics(data){
+  const total=data.length,acq=data.filter(r=>gv(r,'Acquisition Date')).length;
+  const acqR=total?Math.round(acq/total*100):0;
+  const active=data.filter(r=>{const s=(gv(r,'Searcher Status')||'').toLowerCase();return s.includes('active')||s.includes('search');}).length;
+  const wb=data.filter(r=>{const v=gv(r,'Would Back Again?');return v===true||v==='Yes'||v==='yes';}).length;
+  const wbR=total?Math.round(wb/total*100):0;
+  const times=data.filter(r=>gv(r,'Backing Commitment Date','Invested Date')&&gv(r,'Acquisition Date')).map(r=>(new Date(gv(r,'Acquisition Date'))-new Date(gv(r,'Backing Commitment Date','Invested Date')))/(1000*60*60*24*30.4)).filter(t=>t>0&&t<120);
+  const avg=times.length?Math.round(times.reduce((a,b)=>a+b,0)/times.length)+'mo':'—';
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc"><div class="mc-val">${total}</div><div class="mc-lbl">Total searchers</div></div>
+    <div class="mc"><div class="mc-val">${acqR}%</div><div class="mc-lbl">Acquisition rate</div><div class="mc-sub">${acq} acquired</div></div>
+    <div class="mc"><div class="mc-val">${active}</div><div class="mc-lbl">Active searches</div></div>
+    <div class="mc"><div class="mc-val">${wbR}%</div><div class="mc-lbl">Would back again</div></div>
+    <div class="mc"><div class="mc-val">${avg}</div><div class="mc-lbl">Avg to acquisition</div></div>`;
+}
+
+function renderCharts(data){
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const byY={},acqY={};
+  data.forEach(r=>{const y=yr(gv(r,'Backing Commitment Date','Invested Date'));if(!y)return;byY[y]=(byY[y]||0)+1;if(gv(r,'Acquisition Date'))acqY[y]=(acqY[y]||0)+1;});
+  const yrs=Object.keys(byY).sort();
+  mkBar('c-vintage',yrs,yrs.map(y=>byY[y]),'Searchers','#B47C2E');
+  mkBar('c-acq',yrs,yrs.map(y=>byY[y]?Math.round((acqY[y]||0)/byY[y]*100):0),'Acq %','#1A8A6B');
+  const gc={};data.forEach(r=>[gv(r,'Gender 1'),gv(r,'Gender 2')].filter(Boolean).forEach(g=>gc[g]=(gc[g]||0)+1));
+  mkDoughnut('c-gender',Object.keys(gc),Object.values(gc));
+  const fc={};data.forEach(r=>{const f=gv(r,'PSP Fund');if(f)fc[f]=(fc[f]||0)+1;});
+  const fs=Object.entries(fc).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkHBar('c-fund','geo-wrap',fs.map(e=>e[0]),fs.map(e=>e[1]),'#7E57B5');
+  const geo={};data.forEach(r=>{const g=gv(r,'Search Location');if(g)geo[g]=(geo[g]||0)+1;});
+  const gs=Object.entries(geo).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkHBar('c-geo','geo-wrap',gs.map(e=>e[0]),gs.map(e=>e[1]),'#3266AD');
+  const ind={};data.forEach(r=>{const i=gv(r,'Industries of Interest');if(i)i.split(',').forEach(x=>{const t=x.trim();if(t)ind[t]=(ind[t]||0)+1;});});
+  const is=Object.entries(ind).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkHBar('c-industry','ind-wrap',is.map(e=>e[0]),is.map(e=>e[1]),'#C05830');
+}
+
+function mkBar(id,labels,data,label,color){
+  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{label,data,backgroundColor:color+'CC',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},color:'#888'}},y:{ticks:{font:{size:10},color:'#888'},beginAtZero:true}}}});
+}
+function mkHBar(id,wrapId,labels,data,color){
+  const h=Math.max(180,labels.length*30+40);document.getElementById(wrapId).style.height=h+'px';
+  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{data,backgroundColor:color+'CC',borderRadius:3,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},color:'#888'},beginAtZero:true},y:{ticks:{font:{size:10},color:'#888'}}}}});
+}
+function mkDoughnut(id,labels,data){
+  charts[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:COLORS.slice(0,labels.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:12}}}}});
+}
+
+function renderRoster(data){
+  const sorted=[...data].sort((a,b)=>(gv(b,'Backing Commitment Date','Invested Date')||'').localeCompare(gv(a,'Backing Commitment Date','Invested Date')||''));
+  const tbody=document.getElementById('roster');tbody.innerHTML='';
+  sorted.slice(0,50).forEach(r=>{
+    const s=gv(r,'Searcher Status')||'',sl=s.toLowerCase();
+    const pc=sl.includes('active')||sl.includes('search')?'p-active':sl.includes('acqui')?'p-acq':sl.includes('dissol')?'p-dis':'p-oth';
+    const wb=gv(r,'Would Back Again?');const wbt=wb===true||wb==='Yes'?'✓ Yes':wb===false||wb==='No'?'✗ No':'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:500">${r.name||'—'}</td><td>${gv(r,'PSP Fund')||'—'}</td><td><span class="pill ${pc}">${s||'—'}</span></td><td>${fd(gv(r,'Backing Commitment Date','Invested Date'))}</td><td>${fd(gv(r,'Acquisition Date'))}</td><td>${wbt}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(sorted.length>50){const tr=document.createElement('tr');tr.innerHTML=`<td colspan="6" style="text-align:center;color:#888;font-size:11px;padding:12px">Showing 50 of ${sorted.length} searchers</td>`;tbody.appendChild(tr);}
+}
+
+function reset(){Object.values(charts).forEach(c=>c.destroy());charts={};allData=[];document.getElementById('dashboard').style.display='none';document.getElementById('setup').style.display='block';document.getElementById('api-key').value='';}
+</script>
+</body>
+</html>
