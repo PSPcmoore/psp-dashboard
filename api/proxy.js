@@ -1,19 +1,27 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'x-affinity-key, Content-Type');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  const affinityUrl = 'https://api.affinity.co' + req.url.replace('/api/proxy', '');
   const apiKey = req.headers['x-affinity-key'];
+  if (!apiKey) { res.status(400).json({ error: 'Missing key' }); return; }
 
-  const response = await fetch(affinityUrl, {
-    headers: {
-      'Authorization': 'Bearer ' + apiKey,
-      'Content-Type': 'application/json'
-    }
-  });
+  const qs = Object.entries(req.query)
+    .filter(([k]) => k !== 'slug')
+    .map(([k,v]) => `${k}=${encodeURIComponent(v)}`)
+    .join('&');
 
-  const data = await response.json();
-  res.status(response.status).json(data);
+  const slug = Array.isArray(req.query.slug) ? req.query.slug.join('/') : req.query.slug || '';
+  const url = `https://api.affinity.co/${slug}${qs ? '?' + qs : ''}`;
+
+  try {
+    const r = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + apiKey }
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
 }
